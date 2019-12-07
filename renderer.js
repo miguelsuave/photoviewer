@@ -35,6 +35,8 @@ function next(image) {
 
     element.poster = image;
     element.src = image;
+    partner.poster = null;
+    partner.src = null;
     fade(element, partner, level);
 }
 
