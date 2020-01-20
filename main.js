@@ -30,7 +30,7 @@ function createWindow() {
   process.env["NODE_CONFIG_DIR"] = app.getAppPath();
   var config = require('config')
   
-  rootFolder = config.get("media_location");
+  rootFolder = config.get("mediaLocation");
   delete require.cache[require.resolve('config')]; // clear and reload the config from both places
   process.env["NODE_CONFIG_DIR"] = app.getAppPath() + path.delimiter + path.join(rootFolder, "config");
   let rootImageFolder = path.join(rootFolder, "images")
