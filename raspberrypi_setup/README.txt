@@ -1,0 +1,1 @@
+This folder contains the information to configure the raspberry pi.

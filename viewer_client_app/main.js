@@ -38,7 +38,6 @@ function createWindow() {
 
   startCache(pathToMediaFolder);
   startDisplay(mainWindow, path.join(pathToMediaFolder, 'images'));
-  startServer();
 
   mainWindow.loadFile('index.html')
   // uncomment if you want the dev tools to show on load
