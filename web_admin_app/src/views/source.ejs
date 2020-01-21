@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Cloud Share Photo Viewer</title>
+    <meta name="description" content="Cloud Share Photo Viewer settings" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" ref="/css/font-awesome.min.css" />
+</head>
+
+<body>
+    <nav class="navbar fixed-top navbar-expand-md navbar-dark bg-primary mb-3">
+        <div class="flex-row d-flex">
+            <button type="button" class="navbar-toggler mr-2 " data-toggle="offcanvas"
+                title="Toggle responsive left sidebar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="/" title="Cloud Share Photo Viewer Configuration">Cloud Share Photo Viewer
+                Configuration</a>
+        </div>
+    </nav>
+    <div class="container-fluid" id="main">
+        <div class="row row-offcanvas row-offcanvas-left">
+            <div class="col-md-3 col-lg-2 sidebar-offcanvas bg-light pl-0" id="sidebar" role="navigation">
+                <ul class="nav flex-column sticky-top pl-0 pt-5 mt-3">
+                    <li class="nav-item"><a class="nav-link" href="/">Overview</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/source">Media Source</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/settings">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/updates">Updates</a></li>
+                </ul>
+            </div>
+            <!--/col-->
+
+            <div class="col main pt-5 mt-3">
+                <h1 class="display-5 d-none d-sm-block">
+                    Media Source
+                </h1>
+
+                <p class="lead d-none d-sm-block">Select the cloud service where your pictures and vidoes live</p>
+                <div class="row mb-3">
+                    <div class="col-xl-2 col-sm-12 py-2">
+                        <div class="card bg-default h-100">
+                            <div class="card-body bg-default">
+                                <a href="https://www.dropbox.com/oauth2/authorize?client_id=<%=clientId%>&response_type=code&redirect_uri=<%=redirectUri%>">
+                                    <img src="/images/dropbox-logo.jpg" width="100%" />
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!--scripts loaded here-->
+
+        <script src="/js/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        <script src="/js/scripts.js"></script>
+</body>
+
+</html>

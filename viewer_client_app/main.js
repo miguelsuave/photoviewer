@@ -5,7 +5,7 @@ const path = require('path')
 const { startDisplay } = require('./display')
 const { startCache } = require('./cache')
 const { startServer } = require('./web-server')
-let rootFolder = ""
+const electronStore = require('electron-store');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -13,13 +13,9 @@ let mainWindow
 
 function createWindow() {
 
-  console.log(startDisplay);
-
   // Create the browser window.
   mainWindow = new BrowserWindow({
     fullscreen: true,
-    //width: 800,
-    //height: 600,
     frame: false,
     webPreferences: {
       nodeIntegration: true,
@@ -27,16 +23,21 @@ function createWindow() {
     }
   })
 
-  process.env["NODE_CONFIG_DIR"] = app.getAppPath();
-  var config = require('config')
+  let rootConfigFile = "config";
+
+  if( process.env["DEVELOPMENT"] ){
+    rootConfigFile = "config-dev";
+  }
   
-  rootFolder = config.get("mediaLocation");
-  delete require.cache[require.resolve('config')]; // clear and reload the config from both places
-  process.env["NODE_CONFIG_DIR"] = app.getAppPath() + path.delimiter + path.join(rootFolder, "config");
-  let rootImageFolder = path.join(rootFolder, "images")
-  
-  startCache(rootImageFolder);
-  startDisplay(mainWindow, rootImageFolder);
+  let rootConfig = new electronStore({cwd: app.getAppPath(), name: rootConfigFile})
+  let pathToMediaFolder = rootConfig.get('mediaLocation');
+
+  if( !path.isAbsolute(pathToMediaFolder) ){
+    pathToMediaFolder = path.join(app.getAppPath(), pathToMediaFolder);
+  }
+
+  startCache(pathToMediaFolder);
+  startDisplay(mainWindow, path.join(pathToMediaFolder, 'images'));
   startServer();
 
   mainWindow.loadFile('index.html')
@@ -49,7 +50,7 @@ function createWindow() {
 
 app.on("preload", () => {
 
-  startServer(rootFolder)
+  //startServer(rootFolder)
 });
 
 // This method will be called when Electron has finished

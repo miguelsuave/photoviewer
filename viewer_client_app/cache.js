@@ -1,17 +1,32 @@
 const path = require('path')
 const fs = require('fs-extra')
 const axios = require('axios')
+const electronStore = require('electron-store');
+const debug = require('debug')('cache');
 
+var config
 var rootImageFolder
 var cacheTimeout
 var syncing
+var syncDelay
 
-// rootFolder is where we read the drop box configuration and where we copy the images to
-function startCache(_rootImageFolder) {
-    rootImageFolder = _rootImageFolder;
+function startCache(_rootMediaFolder) {
+    config = new electronStore({ cwd: path.join(_rootMediaFolder, 'config'), name: 'config', watch: true })
+    config.onDidChange("syncDelay", (newValue) => { setSyncDelay(newValue); })
+    config.onDidChange("integrations", (newValue) => { debug("Integration settings changed."); }) // does nothing, but could be good to know if we are trying to sync at the same time
+    setSyncDelay(config.get('syncDelay'));
+    rootImageFolder = path.join(_rootMediaFolder, 'images');
     sync();
 }
 
+function setSyncDelay(delay){
+    let parsedDelay = Number.parseFloat(delay);
+    let safeDelay = parsedDelay == Number.NaN ? 15 : parsedDelay; // default to syncing every 15 minutes
+    debug(`Setting sync delay to ${safeDelay} minutes`);
+    syncDelay = safeDelay;
+}
+
+/*
 function init() {
     // clear the timeout that checks our cache, if there is one, and restart it immediately
     if (cacheTimeout) {
@@ -20,13 +35,14 @@ function init() {
 
     sync();
 }
+*/
 
 function sync() {
 
     if (syncing)
         return;
 
-    console.log("Syncing images with server");
+    debug("Syncing images with server"); // TODO: say what the source is
 
     syncing = true;
 
@@ -36,21 +52,34 @@ function sync() {
         // make sure we don't have a timeout instance if we are currently executing it
         clearTimeout(cacheTimeout);
 
-        const config = require("config")
+        let dropBoxKey;
 
-        let dropBoxKey = config.get("access_token");
+        if( config.get("integrations.dropbox") ){
+            dropBoxKey = config.get("integrations.dropbox.accessToken");
+        }
+
+        if( config.get("integrations.amazonPhotos")) {
+            // TODO: if Amazon Photos ever gets a new API, figure out how to integrate it
+        }
+
+        debug('dropboxkey', dropBoxKey);
 
         ensureDirectoryExists = (filePath) => {
             let dirName = path.dirname(filePath);
             if (!fs.existsSync(dirName))
                 fs.mkdirSync(dirName, { recursive: true })
+
+            return filePath;
         }
 
         writeFile = () => {
             // scrape the list of images from the Dropbox account, and save as a text file
-            fs.writeFileSync(path.join(rootImageFolder, "media.txt"), fileList.join(","), { encoding: 'utf8' });
+            fs.writeFileSync(ensureDirectoryExists(path.join(rootImageFolder, "media.txt")), fileList.join(","), { encoding: 'utf8' });
         };
         cacheFiles = () => {
+
+            let newImagesDownloaded
+
             fileList.map((value, index, array) => {
 
                 let newFileLocation = path.join(rootImageFolder, ...value.split('/'))
@@ -63,12 +92,12 @@ function sync() {
                 axios.post('https://content.dropboxapi.com/2/files/download', null,
                     { responseType: 'stream', headers: { "Content-Type": "text/plain", "Authorization": "Bearer " + dropBoxKey, "Dropbox-API-Arg": JSON.stringify({ "path": value }) }, })
                     .then(function (response) {
-                        console.log("New file synced from server", value);
+                        debug("New file synced from server", value);
                         ensureDirectoryExists(newFileLocation);
                         response.data.pipe(fs.createWriteStream(newFileLocation));
                     })
                     .catch(function (error) {
-                        console.log("Error downloading a file", error);
+                        debug("Error downloading a file", error);
                     })
             })
         };
@@ -90,14 +119,14 @@ function sync() {
                         _cleanCache(fileList, file);
                         let childFiles = fs.readdirSync(file);
                         if (childFiles.length == 0) {
-                            console.log("Removing empty folder", file)
+                            debug("Removing empty folder", file)
                             fs.rmdirSync(file, { emfileWait: 2000, maxBusyTries: 5, recursive: true });
                         }
                     }
                     else if (stat.isFile() &&
                         !ignoredExtensions.includes(extension(file)) &&
                         !fileList.includes(file)) {
-                        console.log("Removing stale file", file)
+                        debug("Removing stale file", file)
                         fs.unlinkSync(file);
                     }
                 });
@@ -136,14 +165,15 @@ function sync() {
     }
     catch (exception) {
         // if something fails, we need to keep running this every second or so until it works
-        console.log("Error trying to sync", exception);
+        debug("Error trying to sync", exception);
         syncing = false;
         cacheTimeout = setTimeout(sync, 5000); // try again in 5 seconds
         return;
     }
 
     syncing = false;
-    cacheTimeout = setTimeout(sync, 15000 * 1000); // good!  do it all over again in 15 minutes
+    debug(`Sync process complete. Files may still be downloading.  Will repeat in ${syncDelay} minutes.`)
+    cacheTimeout = setTimeout(sync, syncDelay * 1000 * 60); // good!  do it all over again later
 }
 
-module.exports = { startCache, init };
+module.exports = { startCache, /*init*/ };

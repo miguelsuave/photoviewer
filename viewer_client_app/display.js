@@ -1,11 +1,17 @@
 const path = require('path')
 const fs = require('fs-extra')
+const debug = require('debug')('display')
 
-let mainWindow, rootImageFolder
+let mainWindow, rootImageFolder, isWideScreen
 
 function startDisplay(window, folder) {
+    // TODO: allow the user to set how quickly they rotate
+    // TODO: handle 4:3 aspect ratio screens
     mainWindow = window
     rootImageFolder = folder
+
+    let aspectRatio = mainWindow.getBounds().width / mainWindow.getBounds().height;
+    isWideScreen = aspectRatio > 1.4;
 
     setTimeout(() => { swapMedia(nextImage()) }, 1000);
     setTimeout(() => { swapMedia(nextImage()) }, 1000);
@@ -19,7 +25,7 @@ let filesForDisplay = [];
 function nextImage() {
     if (filesForDisplay.length == 0) {
         filesForDisplay = loadDisplayableFiles(rootImageFolder);
-        console.log("Reloading displayable files.  Count: " + filesForDisplay.length);
+        debug("Reloading displayable files.  Count: " + filesForDisplay.length);
     }
 
     if (filesForDisplay.length == 0) {
@@ -28,12 +34,19 @@ function nextImage() {
 
     const random = (max) => { return Math.floor(Math.random() * max) };
     let nextIndex = random(filesForDisplay.length);
-    let nextImage = filesForDisplay[nextIndex];
+    let nextSelectedImage = filesForDisplay[nextIndex];
 
-    console.log("Image selected for display", nextImage);
+    debug("Image selected for display", nextSelectedImage);
 
     filesForDisplay.splice(nextIndex, 1);
-    return nextImage;
+
+    // this is for when the available files is changed
+    // during syncing but the display doesn't know about it yet
+    if (!fs.existsSync(nextSelectedImage)) {
+        return nextImage();
+    }
+
+    return nextSelectedImage;
 }
 
 
@@ -44,7 +57,7 @@ function loadDisplayableFiles(folder) {
     let files = fs.readdirSync(folder);
     let usableFiles = [];
 
-    const extension = (filename) => { return (path.extname(filename) || "").toLowerCase().replace(".","") }
+    const extension = (filename) => { return (path.extname(filename) || "").toLowerCase().replace(".", "") }
 
     for (let i = 0; i < files.length; i++) {
         let fullPath = path.join(folder, files[i]);
@@ -64,4 +77,4 @@ function swapMedia(path) {
     mainWindow.webContents.send('next', { image: path })
 }
 
-module.exports = {startDisplay};
+module.exports = { startDisplay };

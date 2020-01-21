@@ -1,0 +1,10 @@
+{
+	"mediaLocation": "",
+	"integrations": {
+		"dropbox": {
+			"clientId": "rd0vveb4sqt45n0",
+			"clientSecret": "2fiv00q9d0hmuwf",
+			"redirectUri": "http://localhost:4000/auth"
+		}
+	}
+}
