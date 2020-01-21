@@ -4,7 +4,7 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "set DEBUG=cache,display & electron .",
     "startDev": "set DEBUG=cache,display & env DEVELOPMENT=true electron ."
   },
   "repository": "",

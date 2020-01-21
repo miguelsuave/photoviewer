@@ -4,7 +4,6 @@ const { app, BrowserWindow } = electron
 const path = require('path')
 const { startDisplay } = require('./display')
 const { startCache } = require('./cache')
-const { startServer } = require('./web-server')
 const electronStore = require('electron-store');
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -31,6 +30,7 @@ function createWindow() {
   
   let rootConfig = new electronStore({cwd: app.getAppPath(), name: rootConfigFile})
   let pathToMediaFolder = rootConfig.get('mediaLocation');
+  pathToMediaFolder = path.join(...pathToMediaFolder.split("/"));
 
   if( !path.isAbsolute(pathToMediaFolder) ){
     pathToMediaFolder = path.join(app.getAppPath(), pathToMediaFolder);
@@ -47,11 +47,6 @@ function createWindow() {
     mainWindow = null
   })
 }
-
-app.on("preload", () => {
-
-  //startServer(rootFolder)
-});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
