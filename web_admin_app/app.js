@@ -48,7 +48,7 @@ debug("path to credentials folder", pathToCredentialsFolder);
 let mediaConfig = new conf({ cwd: path.join(pathToMediaFolder, 'config'), configName: 'config' });
 let credentialsConfig = new conf({ cwd: path.join(pathToCredentialsFolder), configName: 'credentials' });
 debug("media config file location", mediaConfig.path);
-debug("credentials config file location", credentialsConfig);
+debug("credentials config file location", credentialsConfig.path);
 
 let clientId = credentialsConfig.get("integrations.dropbox.clientId");
 let clientSecret = credentialsConfig.get("integrations.dropbox.clientSecret");
