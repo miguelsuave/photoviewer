@@ -4,13 +4,16 @@ const axios = require('axios')
 const electronStore = require('electron-store');
 const debug = require('debug')('cache');
 
+const MEDIA_INDEX_FILENAME = "media.txt";
 var config
 var rootImageFolder
 var cacheTimeout
 var syncing
 var syncDelay
+var allowedExtensions
 
-function startCache(_rootMediaFolder) {
+function startCache(_rootMediaFolder, _allowedExtensions) {
+    allowedExtentions = _allowedExtentions;
     config = new electronStore({ cwd: path.join(_rootMediaFolder, 'config'), name: 'config', watch: true })
     config.onDidChange("syncDelay", (newValue) => { setSyncDelay(newValue); })
     config.onDidChange("integrations", (newValue) => { debug("Integration settings changed."); }) // does nothing, but could be good to know if we are trying to sync at the same time
@@ -56,13 +59,16 @@ function sync() {
 
         if( config.get("integrations.dropbox") ){
             dropBoxKey = config.get("integrations.dropbox.accessToken");
+            debug('dropboxkey', dropBoxKey);
         }
 
         if( config.get("integrations.amazonPhotos")) {
-            // TODO: if Amazon Photos ever gets a new API, figure out how to integrate it
+            // TODO: if Amazon Photos ever opens its API again, make it an integration option 
         }
 
-        debug('dropboxkey', dropBoxKey);
+        if( config.get("integrations.googlePhotos")) {
+            // TODO: if Google Photos ever allows photo access, make it an integration option 
+        }
 
         ensureDirectoryExists = (filePath) => {
             let dirName = path.dirname(filePath);
@@ -73,10 +79,12 @@ function sync() {
         }
 
         writeFile = () => {
-            // scrape the list of images from the Dropbox account, and save as a text file
-            fs.writeFileSync(ensureDirectoryExists(path.join(rootImageFolder, "media.txt")), fileList.join(","), { encoding: 'utf8' });
+            fs.writeFileSync(ensureDirectoryExists(path.join(rootImageFolder, MEDIA_INDEX_FILENAME)), fileList.join(","), { encoding: 'utf8' });
         };
+            
         cacheFiles = () => {
+
+            // crawl the list of images from the Dropbox account, and save as a text file
 
             let newImagesDownloaded
 
@@ -102,7 +110,6 @@ function sync() {
             })
         };
 
-        const ignoredExtensions = ["txt"];
         const extension = (filename) => { return (path.extname(filename) || "").toLowerCase().replace(".", "") }
 
         cleanCache = () => {
@@ -124,7 +131,7 @@ function sync() {
                         }
                     }
                     else if (stat.isFile() &&
-                        !ignoredExtensions.includes(extension(file)) &&
+                        file != MEDIA_INDEX_FILENAME && 
                         !fileList.includes(file)) {
                         debug("Removing stale file", file)
                         fs.unlinkSync(file);
@@ -132,7 +139,7 @@ function sync() {
                 });
             }
 
-            let text = fs.readFileSync(path.join(rootImageFolder, "media.txt"), { encoding: 'utf8' });
+            let text = fs.readFileSync(path.join(rootImageFolder, MEDIA_INDEX_FILENAME), { encoding: 'utf8' });
             let fileList = text.split(",");
             let localizedFileList = [];
             fileList.map((file, index, array) => {
@@ -161,6 +168,9 @@ function sync() {
                 writeFile();
                 cacheFiles();
                 cleanCache();
+            })
+            .catch(function(error){
+                console.log("error", error);
             });
     }
     catch (exception) {
