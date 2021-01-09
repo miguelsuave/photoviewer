@@ -1,10 +1,3 @@
 {
-    "mediaLocation": "../../media",
-	"allowedExtensions": [
-		"gif",
-		"jpg",
-		"png",
-		"mov",
-		"mp4"
-	]
+    "mediaLocation": "../../media"
 }
