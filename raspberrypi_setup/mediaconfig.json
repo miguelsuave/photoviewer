@@ -1,0 +1,15 @@
+{
+	"syncDelay": 0.5,
+	"allowedExtensions": [
+		"gif",
+		"jpg",
+		"png",
+		"mov",
+		"mp4"
+	],
+	"integrations": {
+		"dropbox": {
+			"accessToken": "75rzBIQEuUIAAAAAAAC0BJ2_0Bk-kXq9eg-koPCL5w7FfMgurps7I_x4dcUCIuOC"
+		}
+	}
+}
