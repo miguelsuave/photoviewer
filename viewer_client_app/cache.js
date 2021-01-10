@@ -66,7 +66,7 @@ function sync() {
 
         if( config.get("integrations.dropbox") ){
             dropBoxKey = config.get("integrations.dropbox.accessToken");
-            debug('dropboxkey', dropBoxKey);
+            debug('Configured to sync with Dropbox');
         }
 
         if( config.get("integrations.amazonPhotos")) {
@@ -106,10 +106,10 @@ function sync() {
 
                 axios.post('https://content.dropboxapi.com/2/files/download', null,
                     { responseType: 'stream', headers: { "Content-Type": "text/plain", "Authorization": "Bearer " + dropBoxKey, "Dropbox-API-Arg": JSON.stringify({ "path": value }) }, })
-                    .then(function (response) {
+                    .then(async function (response) {
                         debug("New file synced from server", value);
                         ensureDirectoryExists(newFileLocation);
-                        response.data.pipe(fs.createWriteStream(newFileLocation));
+                        await response.data.pipe(fs.createWriteStream(newFileLocation));
                     })
                     .catch(function (error) {
                         debug("Error downloading a file", error);
