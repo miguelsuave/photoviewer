@@ -2,7 +2,8 @@ const path = require('path')
 const fs = require('fs-extra')
 const axios = require('axios')
 const electronStore = require('electron-store');
-const debug = require('debug')('cache');
+//const debug = require('debug')('cache');
+const debug = console.log;
 
 const MEDIA_INDEX_FILENAME = "media.txt";
 var config
@@ -137,7 +138,7 @@ function sync() {
                         }
                     }
                     else if (stat.isFile() &&
-                        file != MEDIA_INDEX_FILENAME && 
+                        file.indexOf(MEDIA_INDEX_FILENAME) < 0 && 
                         !fileList.includes(file)) {
                         debug("Removing stale file", file)
                         fs.unlinkSync(file);
@@ -161,13 +162,13 @@ function sync() {
             { contentType: 'application/json', headers: { "Authorization": "Bearer " + dropBoxKey }, })
             .then(function (response) {
                 if (!response.data) {
-                    return;
+                    debug("No response returned when listing source folder contents");
                 }
 
                 response.data.entries.map((value, index, array) => {
                     if (value[".tag"] == 'file' &&
                         value.is_downloadable == true)
-                        if (!ignoredExtensions.includes(extension(value.path_lower)))
+                        if (allowedExtensions.includes(extension(value.path_lower)))
                             fileList.push(value.path_lower);
                 })
 
@@ -176,7 +177,7 @@ function sync() {
                 cleanCache();
             })
             .catch(function(error){
-                console.log("error", error.data);
+                debug("Error syncing the file list from source", error.data);
             });
     }
     catch (exception) {
