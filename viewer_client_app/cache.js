@@ -95,7 +95,7 @@ function sync() {
 
             let newImagesDownloaded
 
-            fileList.map((value, index, array) => {
+            fileList.map( async (value, index, array) => {
 
                 let newFileLocation = path.join(rootImageFolder, ...value.split('/'))
 
@@ -104,7 +104,7 @@ function sync() {
                     return;
                 }
 
-                axios.post('https://content.dropboxapi.com/2/files/download', null,
+                await xios.post('https://content.dropboxapi.com/2/files/download', null,
                     { responseType: 'stream', headers: { "Content-Type": "text/plain", "Authorization": "Bearer " + dropBoxKey, "Dropbox-API-Arg": JSON.stringify({ "path": value }) }, })
                     .then(async function (response) {
                         debug("New file synced from server", value);
