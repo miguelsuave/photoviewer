@@ -5,7 +5,9 @@
 		"jpg",
 		"png",
 		"mov",
-		"mp4"
+		"mp4",
+		"avi",
+		"mpg"
 	],
 	"integrations": {
 		"dropbox": {
