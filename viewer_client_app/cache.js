@@ -13,7 +13,6 @@ var syncDelay
 var allowedExtensions
 
 function startCache(_rootMediaFolder) {
-    allowedExtentions = _allowedExtentions;
     config = new electronStore({ cwd: path.join(_rootMediaFolder, 'config'), name: 'config', watch: true })
     config.onDidChange("syncDelay", (newValue) => { setSyncDelay(newValue); })
     config.onDidChange("integrations", (newValue) => { debug("Integration settings changed."); }) // does nothing, but could be good to know if we are trying to sync at the same time
