@@ -50,7 +50,7 @@ function nextImage() {
 }
 
 
-const disallowedExtensions = ["txt"];
+const disallowedExtensions = ["txt","tmp"];
 
 function loadDisplayableFiles(folder) {
 

@@ -109,7 +109,8 @@ function sync() {
                     .then(async function (response) {
                         debug("New file synced from server", value);
                         ensureDirectoryExists(newFileLocation);
-                        await response.data.pipe(fs.createWriteStream(newFileLocation));
+                        await response.data.pipe(fs.createWriteStream(newFileLocation+".tmp"));
+                        fs.renameSync(newFileLocation+".tmp", newFileLocation);
                     })
                     .catch(function (error) {
                         debug("Error downloading a file", error);
