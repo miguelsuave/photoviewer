@@ -176,7 +176,7 @@ function sync() {
                 cleanCache();
             })
             .catch(function(error){
-                console.log("error", error);
+                console.log("error", error.data);
             });
     }
     catch (exception) {

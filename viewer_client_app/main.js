@@ -29,8 +29,12 @@ function createWindow() {
   }
   
   let rootConfig = new electronStore({cwd: app.getAppPath(), name: rootConfigFile})
-  let pathToMediaFolder = rootConfig.get('mediaLocation');
-  pathToMediaFolder = path.join(...pathToMediaFolder.split("/"));
+  let pathToMediaFolderConfig = rootConfig.get('mediaLocation');
+  pathToMediaFolder = path.join(...pathToMediaFolderConfig.split("/"));
+  
+  if( pathToMediaFolderConfig.startsWith("/") ) {
+    pathToMediaFolder = "/" + pathToMediaFolder;
+  }
 
   if( !path.isAbsolute(pathToMediaFolder) ){
     pathToMediaFolder = path.join(app.getAppPath(), pathToMediaFolder);
