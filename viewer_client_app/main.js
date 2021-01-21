@@ -16,6 +16,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     fullscreen: true,
     frame: false,
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       devTools: true
@@ -43,9 +44,16 @@ function createWindow() {
   startCache(pathToMediaFolder);
   startDisplay(mainWindow, path.join(pathToMediaFolder, 'images'));
 
+  mainWindow.webContents.on('did-finish-load', function(){
+    setTimeout(function(){
+      mainWindow.show();
+    }, 50);
+  });
+
   mainWindow.loadFile('index.html')
+
   // uncomment if you want the dev tools to show on load
-  //mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
   mainWindow.on('closed', function () {
     mainWindow = null
   })

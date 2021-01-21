@@ -2,16 +2,23 @@ const path = require('path')
 const fs = require('fs-extra')
 const axios = require('axios')
 const electronStore = require('electron-store');
+const { pipeline } = require('stream');
+const { rename } = require('fs');
 //const debug = require('debug')('cache');
 const debug = console.log;
+const ExifImage = require('exif').ExifImage;
+const Jimp = require('jimp')
 
 const MEDIA_INDEX_FILENAME = "media.txt";
 var config
 var rootImageFolder
 var cacheTimeout
-var syncing
 var syncDelay
 var allowedExtensions
+
+
+// TODO: the asynchronous nature of JS means this is written all wrong, but it works.
+// Come back and fix it later.
 
 function startCache(_rootMediaFolder) {
     config = new electronStore({ cwd: path.join(_rootMediaFolder, 'config'), name: 'config', watch: true })
@@ -23,38 +30,22 @@ function startCache(_rootMediaFolder) {
     sync();
 }
 
-function setAllowedExtensions(_allowedExtensions){
+function setAllowedExtensions(_allowedExtensions) {
     // TODO: validate?
     debug(`Setting allowed extensions to ${JSON.stringify(_allowedExtensions)}`);
     allowedExtensions = _allowedExtensions;
 }
 
-function setSyncDelay(delay){
+function setSyncDelay(delay) {
     let parsedDelay = Number.parseFloat(delay);
     let safeDelay = parsedDelay == Number.NaN ? 15 : parsedDelay; // default to syncing every 15 minutes
     debug(`Setting sync delay to ${safeDelay} minutes`);
     syncDelay = safeDelay;
 }
 
-/*
-function init() {
-    // clear the timeout that checks our cache, if there is one, and restart it immediately
-    if (cacheTimeout) {
-        clearTimeout(cacheTimeout);
-    }
-
-    sync();
-}
-*/
-
 function sync() {
 
-    if (syncing)
-        return;
-
     debug("Syncing images with server"); // TODO: say what the source is
-
-    syncing = true;
 
     try {
         let fileList = [];
@@ -64,16 +55,16 @@ function sync() {
 
         let dropBoxKey;
 
-        if( config.get("integrations.dropbox") ){
+        if (config.get("integrations.dropbox")) {
             dropBoxKey = config.get("integrations.dropbox.accessToken");
             debug('Configured to sync with Dropbox');
         }
 
-        if( config.get("integrations.amazonPhotos")) {
+        if (config.get("integrations.amazonPhotos")) {
             // TODO: if Amazon Photos ever opens its API again, make it an integration option 
         }
 
-        if( config.get("integrations.googlePhotos")) {
+        if (config.get("integrations.googlePhotos")) {
             // TODO: if Google Photos ever allows photo access, make it an integration option 
         }
 
@@ -86,36 +77,118 @@ function sync() {
         }
 
         writeFile = () => {
-            fs.writeFileSync(ensureDirectoryExists(path.join(rootImageFolder, MEDIA_INDEX_FILENAME)), fileList.join(","), { encoding: 'utf8' });
+            fs.writeFileSync(ensureDirectoryExists(path.join(rootImageFolder, MEDIA_INDEX_FILENAME)), fileList.join("*"), { encoding: 'utf8' });
         };
-            
+
+        fixImage = (fileName) => {
+
+            return;
+            /*
+            try {
+                new ExifImage({ image: newFileLocation + ".tmp" }, function (error, exifData) {
+                    if (error)
+                        console.log('Error: ' + error.message);
+                    else {
+                        console.log("Orientation", exifData.image.Orientation); // Do something with your data!
+
+                        try {
+                            Jimp.read(newFileLocation + ".tmp", (err, image) => {
+
+                                switch (exifData.image.Orientation) {
+                                    case 1: // we're good!
+                                        break;
+                                    case 2: // 0 degrees, mirrored
+                                        image.flip(true, false);
+                                        break;
+                                    case 3: // 180 degrees
+                                        image.flip(false, true);
+                                        break;
+                                    case 4: // 180 degrees, mirrored
+                                        image.flip(true, true);
+                                        break;
+                                    case 5: // 90 degrees
+                                        image.rotate(90);
+                                        break;
+                                    case 6: // 90 degrees, mirrored
+                                        image.rotate(90).flip(true, false);
+                                        break;
+                                    case 7: // 270 degrees
+                                        image.rotate(270);
+                                        break;
+                                    case 8: // 270 degrees, mirrored
+                                        image.rotate(270).flip(true, false);
+                                        break;
+
+                                }
+
+                                image.write(newFileLocation, () => {
+                                    fs.removeSync(newFileLocation + ".tmp");
+                                });
+                            });
+                        }
+                        catch (erroror) {
+                            console.log("More errors", erroror);
+                        }
+
+                        Jimp.read(image, (err, lenna) => {
+                            if (err) throw err;
+        
+                            lenna.rotate(90).getBase64(Jimp.MIME_JPEG, (result) => {
+                                element.src = result;
+                            })
+                        });
+
+                    }
+                });
+            }
+            catch (error) {
+                //console.log('Error: ' + error.message);
+                fs.rename(newFileLocation + ".tmp", newFileLocation);
+            }
+            */
+        }
+
+        downloadFile = (value) => {
+
+            let newFileLocation = path.join(rootImageFolder, ...value.split('/'))
+
+            // TODO:  also check the content hash to see if the file has changed
+
+            // don't download it if it already exists
+            if (fs.existsSync(newFileLocation)) {
+                return;
+            }
+
+            axios.post('https://content.dropboxapi.com/2/files/download', null,
+                { responseType: 'stream', headers: { "Content-Type": "text/plain", "Authorization": "Bearer " + dropBoxKey, "Dropbox-API-Arg": JSON.stringify({ "path": value }) }, })
+                .then(function (response) {
+                    debug("New file synced from server", value);
+                    ensureDirectoryExists(newFileLocation);
+                    pipeline(response.data, fs.createWriteStream(newFileLocation), () => {
+                        fixImage(newFileLocation);
+                    });
+                })
+                .catch(function (error) {
+                    debug("Error downloading a file", error);
+                })
+        }
+
         cacheFiles = () => {
 
             // crawl the list of images from the Dropbox account, and save as a text file
 
-            let newImagesDownloaded
-
-            fileList.map( async (value, index, array) => {
-
-                let newFileLocation = path.join(rootImageFolder, ...value.split('/'))
-
-                // TODO:  also check the content hash to see if the file has changed
-                if (fs.existsSync(newFileLocation)) {
+            // staggering the download prevents the pipeline buffer from backing up and cutting the image off
+            // it's a hack, but it's easier than dealing with the buffer
+            staggerDownload = (index) => {
+                if (index >= fileList.length)
                     return;
-                }
 
-                await axios.post('https://content.dropboxapi.com/2/files/download', null,
-                    { responseType: 'stream', headers: { "Content-Type": "text/plain", "Authorization": "Bearer " + dropBoxKey, "Dropbox-API-Arg": JSON.stringify({ "path": value }) }, })
-                    .then(async function (response) {
-                        debug("New file synced from server", value);
-                        ensureDirectoryExists(newFileLocation);
-                        await response.data.pipe(fs.createWriteStream(newFileLocation+".tmp"));
-                        fs.renameSync(newFileLocation+".tmp", newFileLocation);
-                    })
-                    .catch(function (error) {
-                        debug("Error downloading a file", error);
-                    })
-            })
+                downloadFile(fileList[index]);
+
+                setTimeout(() => { staggerDownload(++index) }, 1000);
+            }
+
+            staggerDownload(0);
         };
 
         const extension = (filename) => { return (path.extname(filename) || "").toLowerCase().replace(".", "") }
@@ -139,7 +212,7 @@ function sync() {
                         }
                     }
                     else if (stat.isFile() &&
-                        file.indexOf(MEDIA_INDEX_FILENAME) < 0 && 
+                        file.indexOf(MEDIA_INDEX_FILENAME) < 0 &&
                         !fileList.includes(file)) {
                         debug("Removing stale file", file)
                         fs.unlinkSync(file);
@@ -148,7 +221,7 @@ function sync() {
             }
 
             let text = fs.readFileSync(path.join(rootImageFolder, MEDIA_INDEX_FILENAME), { encoding: 'utf8' });
-            let fileList = text.split(",");
+            let fileList = text.split("*");
             let localizedFileList = [];
             fileList.map((file, index, array) => {
                 localizedFileList.push(path.join(rootImageFolder, ...file.split("/")));
@@ -171,27 +244,28 @@ function sync() {
                         value.is_downloadable == true)
                         if (allowedExtensions.includes(extension(value.path_lower)))
                             fileList.push(value.path_lower);
+                        else
+                            debug(`Skipping ${value.path_lower} because it has an ignored file extension`);
                 })
 
                 writeFile();
                 cacheFiles();
                 cleanCache();
             })
-            .catch(function(error){
-                debug("Error syncing the file list from source", error.data);
+            .catch(function (error) {
+                debug("Error syncing the file list from source", error);
             });
     }
     catch (exception) {
         // if something fails, we need to keep running this every second or so until it works
         debug("Error trying to sync", exception);
-        syncing = false;
         cacheTimeout = setTimeout(sync, 5000); // try again in 5 seconds
         return;
     }
 
-    syncing = false;
+    // TODO: so, again, because this is not synchronous, it isn't actually complete when we hit this line
     debug(`Sync process complete. Files may still be downloading.  Will repeat in ${syncDelay} minutes.`)
     cacheTimeout = setTimeout(sync, syncDelay * 1000 * 60); // good!  do it all over again later
 }
 
-module.exports = { startCache, /*init*/ };
+module.exports = { startCache };

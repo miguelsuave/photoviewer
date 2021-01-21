@@ -12,6 +12,7 @@ ipc.on('next', (event, message) => {
     }
 })
 
+
 let images = [
     { element: document.getElementById("image11"), partner: document.getElementById("image12"), level: 90 },
     { element: document.getElementById("image21"), partner: document.getElementById("image22"), level: 80 },
@@ -26,17 +27,10 @@ let images = [
 let currentIndex = -1;
 
 function next(image) {
-
     currentIndex = (++currentIndex) % 8;
-
     let { element, partner, level } = images[currentIndex];
-
-    //console.log("Current index, element, partner, and level", currentIndex, element, partner, level);
-
     element.poster = image;
     element.src = image;
-    //partner.poster = null;
-    //partner.src = null;
     fade(element, partner, level);
 }
 
@@ -44,20 +38,14 @@ let fadeStart;
 
 function fade(element1, element2, level) {
     fadeStart = new Date().getTime();
-    
-    //console.log("Fading");
-
     element1.style.zIndex = level;
-    element2.style.zIndex = level-1;
-
+    element2.style.zIndex = level - 1;
     _fade(element1, element2);
 }
 
 
 function _fade(element1, element2) {
-
     if (element1.style.opacity >= 1) {
-        //console.log("Fade done");
         element1.style.opacity = 1;
         element2.style.opacity = 0;
         element2.pause();
@@ -68,7 +56,6 @@ function _fade(element1, element2) {
     let actualDuration = time - fadeStart;
     if (actualDuration != 0) {
         let pctDuration = (time - fadeStart) / DURATION;
-        //console.log("Opacity on " + element1.id, pctDuration);
         element1.style.opacity = pctDuration;
     }
 
