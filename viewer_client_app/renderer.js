@@ -31,6 +31,7 @@ function next(image) {
     let { element, partner, level } = images[currentIndex];
     element.poster = image;
     element.src = image;
+    element.style.objectPosition = "50% 50%";
     fade(element, partner, level);
 }
 
@@ -40,6 +41,7 @@ function fade(element1, element2, level) {
     fadeStart = new Date().getTime();
     element1.style.zIndex = level;
     element2.style.zIndex = level - 1;
+
     _fade(element1, element2);
 }
 
@@ -48,6 +50,7 @@ function _fade(element1, element2) {
     if (element1.style.opacity >= 1) {
         element1.style.opacity = 1;
         element2.style.opacity = 0;
+        element2.style.objectPosition = "top left";
         element2.pause();
         return;
     }

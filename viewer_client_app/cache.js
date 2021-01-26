@@ -82,70 +82,68 @@ function sync() {
 
         fixImage = (fileName) => {
 
-            return;
-            /*
+            //if( extension(filename) == "jpg")
+
             try {
-                new ExifImage({ image: newFileLocation + ".tmp" }, function (error, exifData) {
-                    if (error)
-                        console.log('Error: ' + error.message);
-                    else {
-                        console.log("Orientation", exifData.image.Orientation); // Do something with your data!
+                new ExifImage({ image: fileName }, function (error, exifData) {
 
-                        try {
-                            Jimp.read(newFileLocation + ".tmp", (err, image) => {
+                    if (error) {
+                        return;
+                    }
 
-                                switch (exifData.image.Orientation) {
-                                    case 1: // we're good!
-                                        break;
-                                    case 2: // 0 degrees, mirrored
-                                        image.flip(true, false);
-                                        break;
-                                    case 3: // 180 degrees
-                                        image.flip(false, true);
-                                        break;
-                                    case 4: // 180 degrees, mirrored
-                                        image.flip(true, true);
-                                        break;
-                                    case 5: // 90 degrees
-                                        image.rotate(90);
-                                        break;
-                                    case 6: // 90 degrees, mirrored
-                                        image.rotate(90).flip(true, false);
-                                        break;
-                                    case 7: // 270 degrees
-                                        image.rotate(270);
-                                        break;
-                                    case 8: // 270 degrees, mirrored
-                                        image.rotate(270).flip(true, false);
-                                        break;
+                    let orientation = exifData.image.Orientation;
 
-                                }
+                    // if we didn't find an orientation, or the orientation was right, just return
+                    if (!orientation || orientation == 1) {
+                        return;
+                    }
 
-                                image.write(newFileLocation, () => {
-                                    fs.removeSync(newFileLocation + ".tmp");
-                                });
+                    try {
+                        Jimp.read(fileName, (err, image) => {
+
+                            if (err) {
+                                return;
+                            }
+
+                            switch (orientation) {
+                                case 1: // we're good, but we shouldn't get here because we checked before
+                                    return;
+                                case 2: // 0 degrees, mirrored
+                                    image.flip(true, false);
+                                    break;
+                                case 3: // 180 degrees
+                                    image.flip(false, true);
+                                    break;
+                                case 4: // 180 degrees, mirrored
+                                    image.flip(true, true);
+                                    break;
+                                case 5: // 90 degrees
+                                    image.rotate(90);
+                                    break;
+                                case 6: // 90 degrees, mirrored
+                                    image.rotate(90);
+                                    break;
+                                case 7: // 270 degrees
+                                    image.rotate(270);
+                                    break;
+                                case 8: // 270 degrees, mirrored
+                                    image.rotate(270).flip(true, false);
+                                    break;
+
+                            }
+                            image.write(fileName+"_"+orientation+"_rot.jpg", () => {
+                                console.log(`Rotated ${fileName} because its orientation was ${orientation}`);
                             });
-                        }
-                        catch (erroror) {
-                            console.log("More errors", erroror);
-                        }
-
-                        Jimp.read(image, (err, lenna) => {
-                            if (err) throw err;
-        
-                            lenna.rotate(90).getBase64(Jimp.MIME_JPEG, (result) => {
-                                element.src = result;
-                            })
                         });
-
+                    }
+                    catch (jimpError) { // this is the Jimp try/catch
+                        console.log(`Error attempting to rotate ${fileName} with orientation of ${orientation}`, jimpError);
                     }
                 });
             }
-            catch (error) {
-                //console.log('Error: ' + error.message);
-                fs.rename(newFileLocation + ".tmp", newFileLocation);
+            catch (exifError) { // this is the Exif try catch
+                //console.log(`Error attempting to read the orientation from ${fileName}`, jimpError);
             }
-            */
         }
 
         downloadFile = (value) => {

@@ -14,9 +14,11 @@ function createWindow() {
 
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    fullscreen: true,
+    //fullscreen: true,
     frame: false,
     show: false,
+    height: 1200,
+    width: 2133,
     webPreferences: {
       nodeIntegration: true,
       devTools: true
