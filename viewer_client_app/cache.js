@@ -106,9 +106,14 @@ function sync() {
                             }
 
                             writeImage = (error, image2) => {
-                                image2.write(fileName, () => {
-                                    console.log(`Rotated ${fileName} because its orientation was ${orientation}`);
-                                })
+                                try {
+                                    image2.write(fileName, () => {
+                                        debug(`Rotated ${fileName} because its orientation was ${orientation}`);
+                                    })
+                                }
+                                catch (writeError) {
+                                    debug(`Error attempting to write rotated file ${fileName} with orientation of ${orientation}`, writeError);
+                                }
                             }
 
                             // I don't fully understand this.  For some reason, it always works to just rotate them 0 degrees.  It must be that they are being read correctly
@@ -142,12 +147,12 @@ function sync() {
                         });
                     }
                     catch (jimpError) { // this is the Jimp try/catch
-                        console.log(`Error attempting to rotate ${fileName} with orientation of ${orientation}`, jimpError);
+                        debug(`Error attempting to rotate ${fileName} with orientation of ${orientation}`, jimpError);
                     }
                 });
             }
             catch (exifError) { // this is the Exif try catch
-                //console.log(`Error attempting to read the orientation from ${fileName}`, jimpError);
+                //debug(`Error attempting to read the orientation from ${fileName}`, jimpError);
             }
         }
 
