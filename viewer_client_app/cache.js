@@ -105,35 +105,40 @@ function sync() {
                                 return;
                             }
 
+                            writeImage = (error, image2) => {
+                                image2.write(fileName, () => {
+                                    console.log(`Rotated ${fileName} because its orientation was ${orientation}`);
+                                })
+                            }
+
+                            // I don't fully understand this.  For some reason, it always works to just rotate them 0 degrees.  It must be that they are being read correctly
+                            // and passed in with the correct orientation
                             switch (orientation) {
                                 case 1: // we're good, but we shouldn't get here because we checked before
                                     return;
                                 case 2: // 0 degrees, mirrored
-                                    image.flip(true, false);
+                                    //image.flip(true, false);
                                     break;
                                 case 3: // 180 degrees
-                                    image.flip(false, true);
+                                    image.rotate(0, writeImage);
                                     break;
                                 case 4: // 180 degrees, mirrored
-                                    image.flip(true, true);
+                                    //image.flip(true, true);
                                     break;
                                 case 5: // 90 degrees
-                                    image.rotate(90);
+                                    // ??
                                     break;
                                 case 6: // 90 degrees, mirrored
-                                    image.rotate(90);
+                                    image.rotate(0, writeImage);
                                     break;
                                 case 7: // 270 degrees
-                                    image.rotate(270);
+                                    //image.rotate(270);
                                     break;
                                 case 8: // 270 degrees, mirrored
-                                    image.rotate(270).flip(true, false);
+                                    //image.rotate(270).flip(true, false);
                                     break;
 
                             }
-                            image.write(fileName+"_"+orientation+"_rot.jpg", () => {
-                                console.log(`Rotated ${fileName} because its orientation was ${orientation}`);
-                            });
                         });
                     }
                     catch (jimpError) { // this is the Jimp try/catch
@@ -183,7 +188,7 @@ function sync() {
 
                 downloadFile(fileList[index]);
 
-                setTimeout(() => { staggerDownload(++index) }, 1000);
+                setTimeout(() => { staggerDownload(++index) }, 250);
             }
 
             staggerDownload(0);
@@ -240,10 +245,12 @@ function sync() {
                 response.data.entries.map((value, index, array) => {
                     if (value[".tag"] == 'file' &&
                         value.is_downloadable == true)
-                        if (allowedExtensions.includes(extension(value.path_lower)))
+                        if (allowedExtensions.includes(extension(value.path_lower)) && !value.path_lower.includes("/__")) {
                             fileList.push(value.path_lower);
-                        else
-                            debug(`Skipping ${value.path_lower} because it has an ignored file extension`);
+                        }
+                        else {
+                            debug(`Skipping ${value.path_lower} because it has an ignored file extension or the folder is flagged for skipping`);
+                        }
                 })
 
                 writeFile();
